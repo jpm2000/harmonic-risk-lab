@@ -1,0 +1,75 @@
+# aggregate_loss.spec.yaml — Compound Poisson aggregate loss formulas
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   Curriculum Module 4 — Collective risk model: S = ΣXᵢ
+#   Loss Data Analytics, Chapter 3 (Open Actuarial Textbooks)
+#
+# This spec defines the mathematical identities and invariants for the
+# compound Poisson aggregate loss model. These are not just "reasonable
+# outputs" — they are exact algebraic identities that must hold for
+# the model to be mathematically correct.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: aggregate-loss
+version: "1.0"
+source:
+  paper: "Curriculum Module 4 — Collective Risk Model"
+  secondary: "Loss Data Analytics, Open Actuarial Textbooks, Chapter 3"
+  key_identity: "Var(S) = λ·E[X²] for compound Poisson (Poisson frequency)"
+
+functions:
+
+  aggregate_mean:
+    description: "E[S] = λ · E[X] for compound Poisson model"
+    properties:
+      - name: non_negative
+        aristotle_prompt: >
+          Verify that aggregate_mean(lambda, mean_x) returns a value >= 0
+          for all lambda >= 0 and mean_x >= 0.
+          Returns -1.0 for invalid inputs (any input < 0).
+
+  aggregate_variance:
+    description: "Var(S) = λ · (Var(X) + (E[X])²) = λ · E[X²]"
+    properties:
+      - name: non_negative
+        aristotle_prompt: >
+          Verify that aggregate_variance(lambda, var_x, mean_x) returns a
+          value >= 0 for all lambda >= 0, var_x >= 0, mean_x >= 0.
+
+      - name: compound_poisson_identity
+        aristotle_prompt: >
+          Verify that aggregate_variance(lambda, var_x, mean_x) equals
+          lambda * (var_x + mean_x * mean_x) for all valid non-negative inputs.
+          This is the compound Poisson variance identity: Var(S) = λ·E[X²].
+        justification: >
+          If this identity fails, the Python simulator's sanity check (comparing
+          simulated variance to theoretical) would be checking the wrong formula.
+          Aristotle proves the C formula is the correct algebraic identity.
+
+  aggregate_var_normal_approx:
+    description: "Parametric VaR of S using normal approximation (CLT-based)"
+    properties:
+      - name: var_exceeds_mean
+        aristotle_prompt: >
+          Verify that aggregate_var_normal_approx(lambda, var_x, mean_x, z_alpha)
+          returns a value >= aggregate_mean(lambda, mean_x) for all valid inputs
+          when z_alpha >= 0. (VaR is always above the mean for z_alpha >= 0.)
+
+      - name: non_negative
+        aristotle_prompt: >
+          Verify that aggregate_var_normal_approx returns a value >= 0
+          for all valid inputs (lambda >= 0, var_x >= 0, mean_x >= 0, z_alpha >= 0).
+
+  aggregate_cvar_normal_approx:
+    description: "CVaR of S using normal approximation"
+    properties:
+      - name: cvar_geq_var
+        aristotle_prompt: >
+          Verify that aggregate_cvar_normal_approx returns a value >=
+          aggregate_var_normal_approx for the same lambda, var_x, mean_x, z_alpha
+          when phi_z_alpha >= 0 and one_minus_alpha > 0.
+          (CVaR >= VaR: the coherence property of Expected Shortfall.)
+        justification: >
+          This connects Module 4 (aggregate loss) with Module 8 (coherent risk
+          measures). If CVaR < VaR in the C code, it's a bug with regulatory
+          implications — the capital model would understate tail risk.

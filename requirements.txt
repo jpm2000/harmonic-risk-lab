@@ -1,6 +1,22 @@
+# Core: Harmonic Aristotle API
 aristotlelib>=3
+
+# Core: Gemini (for examples/04 and examples/05)
 google-genai>=1.0.0
+
+# Core: environment and terminal UI
 python-dotenv>=1.0.0
 rich>=13.0.0
-pyyaml>=6.0        # for reading .spec.yaml files in spec_runner.py
-hypothesis>=6.0    # property-based testing (optional, for quick pre-Aristotle checks)
+
+# Spec Kit: reading .spec.yaml files in utils/spec_runner.py
+pyyaml>=6.0
+
+# Numerics (numerics/ layer):
+numpy>=1.26.0         # vectorized Monte Carlo simulation
+scipy>=1.12.0         # distribution fitting, optimization, stats
+
+# Optimization (numerics/reinsurance_optimizer.py):
+cvxpy>=1.4.0          # LP/QP CVaR minimization (Module 9)
+
+# Optional: property-based testing before Aristotle submission
+hypothesis>=6.0

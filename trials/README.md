@@ -32,19 +32,28 @@ Results are automatically saved to `trials/RESULTS.md`.
 
 ## Available Trials
 
-| Trial | Topic | Paper | Key Properties |
-|---|---|---|---|
-| `t01_mack_chain_ladder/` | IBNR reserve estimation | Mack (1993) | IBNR ≥ 0, factors > 0 |
-| `t02_buhlmann_credibility/` | Personalized insurance pricing | Bühlmann (1967) | Z ∈ [0,1], premium is convex combination |
+| Trial | Topic | Source | Key Properties | Python companion |
+|---|---|---|---|---|
+| `t01_mack_chain_ladder/` | IBNR reserve estimation | Mack (1993) | IBNR ≥ 0, factors > 0 | — |
+| `t02_buhlmann_credibility/` | Personalized insurance pricing | Bühlmann (1967) | Z ∈ [0,1], convex blend | — |
+| `t03_aggregate_loss/` | Compound Poisson formulas | Module 4 / Loss Data Analytics | Var(S) = λ·E[X²] identity | `numerics/aggregate_simulation.py` |
+
+## The Python–Aristotle relationship (t03 onwards)
+
+Starting from t03, each trial has a **Python companion** in `numerics/`:
+- Python computes the answers (Monte Carlo, optimization)
+- C implements the closed-form formulas
+- Aristotle proves the C formulas are always correct
+- This certifies that the Python results rest on proven foundations
 
 ## Planned Trials
 
 | Trial | Topic | Paper | Status |
 |---|---|---|---|
-| `t03_panjer_recursion/` | Aggregate loss distribution | Panjer (1981) | TODO |
 | `t04_evt_var/` | Heavy-tail VaR (mining/cat) | McNeil et al. (2005) | TODO |
 | `t05_bornhuetter_ferguson/` | BF reserves | Bornhuetter & Ferguson (1972) | TODO |
-| `t06_black_scholes_bounds/` | Option pricing bounds | Black & Scholes (1973) | TODO |
+| `t06_panjer_recursion/` | Aggregate loss distribution | Panjer (1981) | TODO |
+| `t07_ruin_probability/` | Cramér-Lundberg ruin bound | Grandell (1991) | TODO |
 
 ---
 
