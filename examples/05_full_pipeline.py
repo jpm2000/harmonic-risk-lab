@@ -16,9 +16,11 @@ This is the closest thing in this repo to what bluberri would ship:
   with an optimal reinsurance recommendation, all mathematically certified.
 
 HOW TO RUN:
-  python examples/05_full_pipeline.py
-  python examples/05_full_pipeline.py --skip-aristotle   (faster, no API call)
-  python examples/05_full_pipeline.py --sector mining     (or: insurance / defense)
+  python3 examples/05_full_pipeline.py
+  python3 examples/05_full_pipeline.py --skip-aristotle          (no Aristotle credits)
+  python3 examples/05_full_pipeline.py --skip-gemini             (no Gemini credits)
+  python3 examples/05_full_pipeline.py --skip-aristotle --skip-gemini   (pure Python, free)
+  python3 examples/05_full_pipeline.py --sector mining           (or: insurance / defense)
 """
 
 import asyncio
@@ -82,7 +84,12 @@ SECTORS = {
 }
 
 
-async def run(sector: str = "mining", skip_aristotle: bool = False) -> None:
+def _gemini_available() -> bool:
+    """True if any Gemini credentials are configured (API key or ADC project)."""
+    return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_CLOUD_PROJECT"))
+
+
+async def run(sector: str = "mining", skip_aristotle: bool = False, skip_gemini: bool = False) -> None:
     from numerics.aggregate_simulation import simulate_lognormal, print_summary
     from numerics.reinsurance_optimizer import (
         efficient_frontier_xl,
@@ -167,8 +174,7 @@ async def run(sector: str = "mining", skip_aristotle: bool = False) -> None:
 
     # ── Layer 6: Explanation — Gemini stakeholder narrative ───────────────
     console.print(Rule("[bold]Layer 6 — Executive Summary (Module 11 output format)[/bold]"))
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if gemini_key:
+    if not skip_gemini and _gemini_available():
         from utils.gemini_client import explain_result
         summary_text = (
             f"Portfolio: {label}. "
@@ -184,9 +190,11 @@ async def run(sector: str = "mining", skip_aristotle: bool = False) -> None:
             title="[green]Executive Summary for Stakeholders[/green]",
             border_style="green",
         ))
+    elif skip_gemini:
+        console.print("[dim]--skip-gemini: Gemini summary skipped (no credits consumed).[/dim]")
     else:
         console.print(
-            "[dim]Set GEMINI_API_KEY in .env to get the Gemini executive summary.[/dim]"
+            "[dim]Add GEMINI_API_KEY or GOOGLE_CLOUD_PROJECT to .env to enable the executive summary.[/dim]"
         )
 
     console.print(Rule())
@@ -217,7 +225,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--skip-aristotle", action="store_true",
-        help="Skip the Aristotle verification step"
+        help="Skip Aristotle verification (no Harmonic credits consumed)"
+    )
+    parser.add_argument(
+        "--skip-gemini", action="store_true",
+        help="Skip Gemini executive summary (no Google credits consumed)"
     )
     args = parser.parse_args()
-    asyncio.run(run(sector=args.sector, skip_aristotle=args.skip_aristotle))
+    asyncio.run(run(sector=args.sector, skip_aristotle=args.skip_aristotle, skip_gemini=args.skip_gemini))

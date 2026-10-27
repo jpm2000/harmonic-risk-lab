@@ -18,10 +18,30 @@ from google.genai import types
 
 
 def _get_client() -> genai.Client:
+    """
+    Supports two auth methods:
+      1. API key:  set GEMINI_API_KEY in .env  (personal/aistudio.google.com)
+      2. ADC:      run the ADC setup script, then set GOOGLE_CLOUD_PROJECT in .env
+                   bash <(curl -sSL https://storage.googleapis.com/cloud-samples-data/adc/setup_adc.sh)
+                   Use this when your org blocks API keys (enterprise Vertex AI).
+    """
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise EnvironmentError("GEMINI_API_KEY not found in environment. Check your .env file.")
-    return genai.Client(api_key=api_key)
+    if api_key:
+        return genai.Client(api_key=api_key)
+
+    project = os.getenv("GOOGLE_CLOUD_PROJECT")
+    if project:
+        location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+        return genai.Client(vertexai=True, project=project, location=location)
+
+    raise EnvironmentError(
+        "No Gemini credentials found. Choose one of:\n"
+        "  Option A — API key (aistudio.google.com):\n"
+        "    Add GEMINI_API_KEY=your_key to .env\n\n"
+        "  Option B — ADC (enterprise / org account):\n"
+        "    Run: bash <(curl -sSL https://storage.googleapis.com/cloud-samples-data/adc/setup_adc.sh)\n"
+        "    Then add GOOGLE_CLOUD_PROJECT=your-project-id to .env"
+    )
 
 
 def generate_c_model(concept: str) -> str:

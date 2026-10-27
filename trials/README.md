@@ -37,6 +37,10 @@ Results are automatically saved to `trials/RESULTS.md`.
 | `t01_mack_chain_ladder/` | IBNR reserve estimation | Mack (1993) | IBNR ≥ 0, factors > 0 | — |
 | `t02_buhlmann_credibility/` | Personalized insurance pricing | Bühlmann (1967) | Z ∈ [0,1], convex blend | — |
 | `t03_aggregate_loss/` | Compound Poisson formulas | Module 4 / Loss Data Analytics | Var(S) = λ·E[X²] identity | `numerics/aggregate_simulation.py` |
+| `t04_evt_var/` | Heavy-tail VaR (mining/cat) | McNeil et al. (2005) + Marsh (2025) | VaR ≥ u, ES ≥ VaR, EVT ≥ Normal | — |
+| `t05_bi_multiplier/` | Business interruption multiplier | Marsh (2025) + PAS (2025) | total ≥ PD, BI ratio ∈ [0,1), mult ≥ 1 | — |
+| `t06_concentration_risk/` | Single point of failure | Marsh (2025) / Rio Tinto | conc ≥ divr, ratio ∈ (0,1], monotone in n | — |
+| `t07_tailings_pml/` | Tailings dam PML / return period | McNeil et al. (2005) / Brumadinho | PML ≥ x_m, monotone in T, AEP ∈ (0,1] | — |
 
 ## The Python–Aristotle relationship (t03 onwards)
 
@@ -50,10 +54,9 @@ Starting from t03, each trial has a **Python companion** in `numerics/`:
 
 | Trial | Topic | Paper | Status |
 |---|---|---|---|
-| `t04_evt_var/` | Heavy-tail VaR (mining/cat) | McNeil et al. (2005) | TODO |
-| `t05_bornhuetter_ferguson/` | BF reserves | Bornhuetter & Ferguson (1972) | TODO |
-| `t06_panjer_recursion/` | Aggregate loss distribution | Panjer (1981) | TODO |
-| `t07_ruin_probability/` | Cramér-Lundberg ruin bound | Grandell (1991) | TODO |
+| `t08_bornhuetter_ferguson/` | BF reserves (long-tail mining claims) | Bornhuetter & Ferguson (1972) | TODO |
+| `t09_panjer_recursion/` | Aggregate loss distribution | Panjer (1981) | TODO |
+| `t10_ruin_probability/` | Cramér-Lundberg ruin bound | Grandell (1991) | TODO |
 
 ---
 

@@ -1,0 +1,66 @@
+# concentration_risk.spec.yaml — Single point of failure / concentration risk model
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   Marsh (2025). Mining Losses Uncovered.
+#   Patrick Walker (Rio Tinto): "Dependence on single, high-capacity machines
+#   amplifies single-point failures." Machinery breakdown = 16.5% of losses.
+#
+# KEY INSIGHT:
+#   concentrated_bi(f=1.0) = N × diversified_bi(n=N)
+#   Diversification across n machines reduces per-failure BI by factor 1/n.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: concentration-risk
+version: "1.0"
+source:
+  paper: "Marsh (2025). Mining Losses Uncovered. Patrick Walker, Rio Tinto."
+  context: "Machinery breakdown = 16.5% of $15.3B; BI share > 82%."
+  key_formula: "concentrated_bi = f * daily_revenue * recovery_days"
+
+functions:
+
+  concentrated_bi_loss:
+    description: "BI loss from failure of one asset handling fraction f of output"
+    properties:
+      - name: non_negative
+        aristotle_prompt: >
+          Verify concentrated_bi_loss(f, daily_revenue, recovery_days) >= 0
+          for all 0 < f <= 1, daily_revenue >= 0, recovery_days >= 0.
+
+      - name: monotone_in_f
+        aristotle_prompt: >
+          Verify concentrated_bi_loss is monotone in f: if f1 >= f2 > 0
+          (both <= 1.0), then concentrated_bi_loss(f1,...) >= concentrated_bi_loss(f2,...).
+        justification: >
+          Higher concentration fraction always means more BI exposure per failure.
+          If this fails, the model would suggest spreading production over fewer machines
+          reduces risk — the opposite of the Marsh finding.
+
+  diversified_bi_loss:
+    description: "BI loss when production is split across n equal machines"
+    properties:
+      - name: leq_concentrated
+        aristotle_prompt: >
+          Verify diversified_bi_loss(n, daily_revenue, recovery_days) <=
+          concentrated_bi_loss(1.0, daily_revenue, recovery_days) for all
+          n >= 1, daily_revenue >= 0, recovery_days >= 0.
+        justification: >
+          Any diversification (n >= 1) produces at most as much BI exposure as
+          full concentration. This is the mathematical proof that diversification
+          of production assets is never harmful.
+
+      - name: monotone_decreasing_in_n
+        aristotle_prompt: >
+          Verify diversified_bi_loss is monotone decreasing in n_machines:
+          if n1 >= n2 >= 1, then diversified_bi_loss(n1,...) <= diversified_bi_loss(n2,...).
+        justification: >
+          Adding more machines always reduces single-failure BI loss. An insurer
+          must price this correctly — adding a redundant machine should reduce premiums.
+
+  diversification_ratio:
+    description: "Fraction of max BI retained after splitting across n machines"
+    properties:
+      - name: bounded_zero_one
+        aristotle_prompt: >
+          Verify diversification_ratio(n_machines) is in (0, 1] for all n_machines >= 1.
+          Returns -1.0 for n_machines < 1.

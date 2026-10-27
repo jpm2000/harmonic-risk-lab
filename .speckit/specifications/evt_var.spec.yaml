@@ -1,0 +1,62 @@
+# evt_var.spec.yaml — Extreme Value Theory VaR for heavy-tail mining losses
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   McNeil, Frey & Embrechts (2005). Quantitative Risk Management. Ch. 7.
+#   Marsh (2025). Mining Losses Uncovered. $15.3B database, 2006-2025.
+#
+# CONTEXT:
+#   Fire/explosion (25.7%), flood (22.5%), and geotechnical (10.4%) mining
+#   losses follow power-law tails. Normal VaR systematically underestimates
+#   capital requirements. This spec verifies the EVT model's invariants.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: evt-var
+version: "1.0"
+source:
+  paper: "McNeil, Frey & Embrechts (2005). Quantitative Risk Management. Ch. 7."
+  context: "Marsh Mining Losses Uncovered (2025). Brumadinho tailings = $7B+."
+  key_formula: "VaR_alpha = u + (sigma/xi) * [(p_u / (1-alpha))^xi - 1]"
+
+functions:
+
+  gpd_var:
+    description: "EVT VaR via Peaks-over-Threshold / Generalized Pareto Distribution"
+    properties:
+      - name: var_above_threshold
+        aristotle_prompt: >
+          Verify that gpd_var(u, sigma, xi, p_u, alpha) returns a value >= u
+          for all u >= 0, sigma > 0, 0 < xi < 2, 0 < p_u <= 1, 0 < alpha < 1.
+          Returns -1.0 for invalid inputs.
+        justification: >
+          VaR below the threshold would mean the GPD model is producing results
+          in a region where it was never calibrated. This is a model validity check.
+
+      - name: monotone_in_alpha
+        aristotle_prompt: >
+          Verify that gpd_var is monotone in alpha: for fixed u, sigma, xi, p_u,
+          if alpha1 >= alpha2 (both valid), then gpd_var(..., alpha1) >= gpd_var(..., alpha2).
+        justification: >
+          Higher confidence must produce higher VaR. Violation = capital model
+          that suggests you need less protection at higher confidence — absurd.
+
+  gpd_es:
+    description: "Expected Shortfall (CVaR) beyond VaR under Generalized Pareto Distribution"
+    properties:
+      - name: es_geq_var
+        aristotle_prompt: >
+          Verify that gpd_es(u, sigma, xi, p_u, alpha) >= gpd_var(u, sigma, xi, p_u, alpha)
+          for all valid inputs where 0 < xi < 1. This is the coherence property:
+          ES (Expected Shortfall) is always >= VaR at the same confidence level.
+        justification: >
+          ES >= VaR is the central requirement for a coherent risk measure
+          (Artzner et al. 1999). If ES < VaR, the capital model understates
+          tail losses — a regulatory and solvency failure.
+
+  evt_tail_premium:
+    description: "Extra capital needed due to heavy tail vs. normal distribution"
+    properties:
+      - name: valid_when_inputs_valid
+        aristotle_prompt: >
+          Verify that evt_tail_premium returns a finite value (not -1.0) when
+          all inputs to both gpd_var and normal_var are valid.
+          Returns -1.0 only when one of its components would be invalid.

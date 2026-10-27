@@ -1,0 +1,72 @@
+# tailings_pml.spec.yaml — Probable Maximum Loss for tailings / catastrophic events
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   McNeil, Frey & Embrechts (2005). Quantitative Risk Management. Ch. 7.
+#   Pickands (1975). Statistical inference using extreme order statistics.
+#
+# REAL-WORLD CALIBRATION:
+#   2019 Brumadinho tailings dam (Vale, Brazil) = $7B+ settlement.
+#   Tailings = ~0.7% of Marsh event count but catastrophic loss outliers.
+#
+# KEY FORMULA:
+#   PML(T) = x_m * T^(1/alpha)    [Pareto PML for return period T]
+#   AEP(x) = (x_m / x)^alpha      [Annual exceedance probability]
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: tailings-pml
+version: "1.0"
+source:
+  paper: "McNeil, Frey & Embrechts (2005). QRM Ch. 7. Pickands (1975)."
+  context: "Brumadinho (2019) = $7B+. Solvency II requires 1-in-200-year capital."
+  key_formula: "PML(T) = x_m * T^(1/alpha)"
+
+functions:
+
+  pml_pareto:
+    description: "Probable Maximum Loss for Pareto-distributed severity"
+    properties:
+      - name: geq_minimum_loss
+        aristotle_prompt: >
+          Verify pml_pareto(x_m, alpha, T) >= x_m for all x_m > 0, alpha > 0, T >= 1.
+          The PML always equals or exceeds the minimum loss.
+        justification: >
+          PML below x_m would mean the model predicts the T-year event is smaller
+          than the smallest event ever observed — logically impossible.
+
+      - name: monotone_in_T
+        aristotle_prompt: >
+          Verify pml_pareto is monotone in T: if T1 >= T2 >= 1, then
+          pml_pareto(x_m, alpha, T1) >= pml_pareto(x_m, alpha, T2).
+          A 200-year event is always at least as large as a 100-year event.
+        justification: >
+          If PML(200yr) < PML(100yr), the capital model would say Solvency II
+          requires LESS capital than a 1-in-100 standard — a regulatory absurdity.
+
+  aep_pareto:
+    description: "Annual exceedance probability for Pareto-distributed severity"
+    properties:
+      - name: valid_probability
+        aristotle_prompt: >
+          Verify aep_pareto(x, x_m, alpha) is in (0, 1] for all x >= x_m > 0, alpha > 0.
+          AEP must be a valid probability.
+
+      - name: monotone_decreasing_in_x
+        aristotle_prompt: >
+          Verify aep_pareto is monotone decreasing in x: if x1 >= x2 >= x_m > 0
+          and alpha > 0, then aep_pareto(x1, x_m, alpha) <= aep_pareto(x2, x_m, alpha).
+          Larger losses must be rarer.
+        justification: >
+          If AEP increases with loss size, the model says larger losses happen more
+          often — physically impossible and would produce inverted insurance pricing.
+
+  pml_consistency_check:
+    description: "Verifies PML and AEP are consistent inverses: aep(pml(T)) = 1/T"
+    properties:
+      - name: inverse_consistency
+        aristotle_prompt: >
+          Verify pml_consistency_check(x_m, alpha, T) returns 0.0 for all
+          x_m > 0, alpha > 0, T >= 1. This checks that aep(pml(T)) = 1/T exactly.
+        justification: >
+          If the T-year PML does not have an AEP of 1/T, the PML and AEP functions
+          are inconsistent with each other. A risk report using both would give
+          contradictory answers to the same question.

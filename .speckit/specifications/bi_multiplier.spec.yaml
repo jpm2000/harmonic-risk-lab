@@ -1,0 +1,90 @@
+# bi_multiplier.spec.yaml — Business interruption loss multiplier model
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   Marsh (2025). Mining Losses Uncovered. BI = ~80% of total gross losses.
+#   Pan American Silver (2025). Sustainability Report. 2 fatalities, multi-site
+#   shutdowns showing BI tail extends well beyond incident date.
+#
+# KEY INSIGHT:
+#   Total loss = PD + BI = PD + daily_revenue * recovery_days
+#   At 80% BI share: multiplier = total/PD = 1/(1-0.80) = 5×
+#   Mining insurer who prices PD only is underinsuring by 5×.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: bi-multiplier
+version: "1.0"
+source:
+  paper: "Marsh (2025). Mining Losses Uncovered. BI = 80% of $15.3B in claims."
+  context: >
+    Pan American Silver (2025): 2 fatal accidents triggered multi-site shutdowns,
+    safety audits, corrective action plans — extending production loss far beyond
+    the direct incident.
+  key_formula: "total_loss = pd_loss + daily_revenue * recovery_days"
+
+functions:
+
+  bi_loss_amount:
+    description: "BI loss component = daily_revenue * recovery_days"
+    properties:
+      - name: non_negative
+        aristotle_prompt: >
+          Verify that bi_loss_amount(daily_revenue, recovery_days) returns a value >= 0
+          for all daily_revenue >= 0 and recovery_days >= 0.
+          Returns -1.0 for negative inputs.
+
+  total_insured_loss:
+    description: "Total loss = pd_loss + bi_loss"
+    properties:
+      - name: geq_pd_loss
+        aristotle_prompt: >
+          Verify that total_insured_loss(pd_loss, daily_revenue, recovery_days)
+          returns a value >= pd_loss for all pd_loss >= 0, daily_revenue >= 0,
+          recovery_days >= 0. Business interruption never reduces the total.
+        justification: >
+          If total < pd, the model implies negative BI — impossible.
+          An insurer using this model would price policies below actual PD.
+
+      - name: monotone_in_recovery_days
+        aristotle_prompt: >
+          Verify that total_insured_loss is monotone in recovery_days: for fixed
+          pd_loss >= 0 and daily_revenue >= 0, if days1 >= days2 (both >= 0),
+          then total_insured_loss(pd_loss, daily_revenue, days1) >=
+          total_insured_loss(pd_loss, daily_revenue, days2).
+        justification: >
+          Longer production outage = larger total loss. Always. If this fails,
+          the model suggests a 180-day outage costs less than a 90-day outage.
+
+  bi_share:
+    description: "BI ratio = bi_loss / total_loss (Marsh average ~0.80 for mining)"
+    properties:
+      - name: bounded_zero_one
+        aristotle_prompt: >
+          Verify that bi_share(pd_loss, daily_revenue, recovery_days) returns
+          a value in [0, 1) for all pd_loss > 0, daily_revenue >= 0, recovery_days >= 0.
+          The BI fraction can never equal or exceed 1.0 when pd_loss > 0.
+        justification: >
+          bi_ratio >= 1 would mean physical damage is zero or negative — impossible.
+          This is the core constraint that keeps pricing models internally consistent.
+
+      - name: monotone_in_recovery_days
+        aristotle_prompt: >
+          Verify that bi_share is monotone in recovery_days: for fixed pd_loss > 0
+          and daily_revenue > 0, if days1 >= days2 (both >= 0), then
+          bi_share(pd_loss, daily_revenue, days1) >= bi_share(pd_loss, daily_revenue, days2).
+        justification: >
+          The longer the production shutdown, the greater the BI fraction.
+          This is the mathematical basis for the Marsh observation that
+          "months of lost production inflict the deepest financial wounds."
+
+  bi_multiplier:
+    description: "Multiplier = total_loss / pd_loss. Marsh average ~5× for mining"
+    properties:
+      - name: geq_one
+        aristotle_prompt: >
+          Verify that bi_multiplier(pd_loss, daily_revenue, recovery_days)
+          returns a value >= 1.0 for all pd_loss > 0, daily_revenue >= 0,
+          recovery_days >= 0. Returns -1.0 for pd_loss <= 0 or negative inputs.
+        justification: >
+          A multiplier < 1 would mean the insurer pays less than the physical
+          damage — a logical impossibility. bi_multiplier >= 1.0 is the
+          fundamental invariant that makes BI coverage coherent.
