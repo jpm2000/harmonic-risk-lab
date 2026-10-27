@@ -1,0 +1,94 @@
+# var_model.spec.yaml — Specification for market risk measures
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   Basel Committee on Banking Supervision (2019).
+#   "Minimum capital requirements for market risk." (Basel III FRTB)
+#   Specifically: parametric VaR (Section 3.2) and Expected Shortfall (ES).
+#
+# This spec defines what portfolio_var and portfolio_es MUST do.
+# The C implementation in models/risk_model.c must satisfy all properties.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: var-model
+version: "1.0"
+source:
+  paper: "Basel III Fundamental Review of the Trading Book (FRTB)"
+  section: "Section 3.2 — Internal Models Approach"
+  secondary: "Hardy, M.R. (2006). An Introduction to Risk Measures for Actuarial Applications. CAS Study Note."
+
+functions:
+
+  portfolio_var:
+    description: >
+      Parametric Value at Risk assuming normally distributed portfolio returns.
+      VaR(alpha) = the minimum loss that will be exceeded with probability (1-alpha).
+    inputs:
+      mu:
+        type: double
+        description: Expected daily portfolio return
+        constraints: any real number
+      sigma:
+        type: double
+        description: Daily portfolio volatility (standard deviation)
+        constraints: ">= 0"
+      alpha:
+        type: double
+        description: Confidence level
+        constraints: "in (0.5, 1.0)"
+      horizon:
+        type: int
+        description: Holding period in days
+        constraints: ">= 1"
+    output:
+      type: double
+      constraints: ">= 0"
+    properties:
+      - name: non_negative
+        aristotle_prompt: >
+          Verify that portfolio_var(mu, sigma, alpha, horizon) always returns
+          a value >= 0.0 for all valid inputs (sigma >= 0, alpha in (0.5, 1.0),
+          horizon >= 1, mu is any real number).
+        justification: >
+          VaR is a loss measure — a negative VaR would mean the portfolio
+          is expected to gain in a worst-case scenario, which is nonsensical
+          as a regulatory capital charge.
+
+      - name: monotone_in_sigma
+        aristotle_prompt: >
+          Verify that for any two volatilities sigma1 > sigma2 >= 0 with
+          all other inputs identical and valid, portfolio_var returns a
+          value at least as large for sigma1 as for sigma2.
+        justification: >
+          More volatile portfolios carry more risk. A risk measure that
+          decreases when volatility increases is incorrectly calibrated.
+
+      - name: monotone_in_horizon
+        aristotle_prompt: >
+          Verify that portfolio_var(mu, sigma, alpha, horizon+1) >=
+          portfolio_var(mu, sigma, alpha, horizon) for all valid inputs.
+        justification: >
+          Longer holding periods accumulate more risk. Basel III uses
+          sqrt(T) scaling precisely for this.
+
+  portfolio_es:
+    description: >
+      Expected Shortfall (ES / CVaR) — average loss in the worst (1-alpha) scenarios.
+      ES is a coherent risk measure; VaR is not.
+    properties:
+      - name: es_geq_var
+        aristotle_prompt: >
+          Verify that portfolio_es(mu, sigma, alpha, horizon) >=
+          portfolio_var(mu, sigma, alpha, horizon) for all valid inputs.
+        justification: >
+          This is the defining property of coherence (Artzner et al. 1999).
+          If ES < VaR the implementation has a bug in the phi(z) term.
+
+  calculate_rwa:
+    description: >
+      Risk-Weighted Asset calculation per Basel III Standardised Approach.
+    properties:
+      - name: bounded_output
+        aristotle_prompt: >
+          Verify that for exposure >= 0 and risk_weight in [0.0, 1.5],
+          calculate_rwa returns a value in [0.0, exposure * 1.5].
+          Verify it returns -1.0 for invalid inputs.

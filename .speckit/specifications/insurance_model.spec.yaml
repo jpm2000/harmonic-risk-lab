@@ -1,0 +1,77 @@
+# insurance_model.spec.yaml — Specification for actuarial premium principles
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE:
+#   Kaas, R., Goovaerts, M., Dhaene, J., Denuit, M. (2008).
+#   "Modern Actuarial Risk Theory." Springer. Chapter 2.
+#
+#   Daykin, C.D., Pentikäinen, T., Pesonen, M. (1994).
+#   "Practical Risk Theory for Actuaries." Chapter 3.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: insurance-model
+version: "1.0"
+source:
+  paper: "Kaas et al. (2008). Modern Actuarial Risk Theory. Springer."
+  section: "Chapter 2 — Premium Calculation Principles"
+
+functions:
+
+  premium_ev:
+    description: >
+      Expected Value Principle: P = (1+theta) * E[L].
+      The premium is a fixed proportional loading over expected loss.
+    properties:
+      - name: exceeds_expected_loss
+        aristotle_prompt: >
+          Verify that premium_ev(expected_loss, theta) returns a value
+          strictly greater than expected_loss for any expected_loss >= 0
+          and theta > 0. Verify it returns -1.0 for invalid inputs.
+        justification: >
+          Fundamental solvency principle: the premium must cover the expected
+          loss plus provide a safety margin. A premium equal to or below
+          expected loss guarantees eventual ruin (no margin for expenses or
+          adverse deviation).
+
+      - name: monotone_in_theta
+        aristotle_prompt: >
+          Verify that for theta1 > theta2 > 0 and the same expected_loss >= 0,
+          premium_ev returns a larger value for theta1 than for theta2.
+        justification: >
+          Higher loading = higher premium. This is trivially true mathematically
+          but worth verifying the code doesn't have a sign error.
+
+  premium_sd:
+    description: >
+      Standard Deviation Principle: P = E[L] + k * sigma(L).
+      Loading proportional to volatility — riskier policies pay more.
+    properties:
+      - name: exceeds_expected_loss
+        aristotle_prompt: >
+          Verify that premium_sd(expected_loss, std_loss, k) >= expected_loss
+          for all std_loss >= 0 and k > 0. Verify it returns -1.0 for invalid inputs.
+
+  premium_variance:
+    description: >
+      Variance Principle: P = E[L] + beta * Var(L).
+    properties:
+      - name: exceeds_expected_loss
+        aristotle_prompt: >
+          Verify that premium_variance(expected_loss, variance_loss, beta) >=
+          expected_loss for all variance_loss >= 0 and beta > 0.
+          Verify it returns -1.0 for invalid inputs.
+
+  layer_expected_loss:
+    description: >
+      Expected loss for an excess-of-loss reinsurance layer [R, R+L].
+      Uses Pareto distribution (standard for cat and mining liability).
+    properties:
+      - name: bounded_in_layer
+        aristotle_prompt: >
+          Verify that layer_expected_loss(retention, limit, alpha_pareto, x_m)
+          returns a value in [0.0, limit] for all valid inputs
+          (retention >= x_m > 0, limit > 0, alpha_pareto > 1.0).
+          The expected loss in a layer cannot exceed the layer's own limit.
+        justification: >
+          The layer is capped at `limit` by definition. If layer_expected_loss
+          exceeds `limit`, the insurer would be paying out more than the
+          layer allows — a clear modeling error.

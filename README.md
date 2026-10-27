@@ -8,6 +8,33 @@ Learning [Harmonic's Aristotle API](https://aristotle.harmonic.fun) for finance,
 
 ---
 
+## Aristotle vs OpenAI's Math Model — Are They the Same?
+
+**No. They solve different problems and are complementary.**
+
+| | OpenAI math model (o3, preprints) | Harmonic Aristotle |
+|---|---|---|
+| **What it does** | Discovers/solves hard open math problems | Certifies code is correct for ALL inputs |
+| **Input** | "Prove Hadwiger's conjecture for k=6" | C code + "this function is always ≥ 0" |
+| **Output** | New mathematical proof or counterexample | Machine-verifiable proof or exact failing input |
+| **Strength** | Creative reasoning, research-level insight | Exhaustive certainty over all possible inputs |
+| **For bluberri** | Derive new risk/insurance formulas | Prove your C implementation of those formulas is correct |
+
+OpenAI's [preprints](https://github.com/openai/math/tree/main/preprints) (180+ papers solving open conjectures in algebra, topology, combinatorics) show an AI *discovering* new mathematics. That's a research tool.
+
+Aristotle is an *engineering* tool — once you have a formula (from any source: papers, OpenAI, regulators), it proves your code implements it correctly for every possible input.
+
+**The research pipeline:**
+```
+Math paper
+    ↓ Gemini/OpenAI (translate formulas to C)
+C implementation
+    ↓ Aristotle (formally verify)
+Certified model — safe to deploy
+```
+
+---
+
 ## What is Aristotle?
 
 Aristotle is **not** a math chatbot. It is a **formal verification AI**.
@@ -79,27 +106,92 @@ Full pipeline: you describe any financial concept in plain English → Gemini wr
 
 ---
 
+## Spec-Driven Workflow (Spec Kit)
+
+This repo uses [GitHub Spec Kit](https://starlog.is/articles/ai-dev-tools/github-spec-kit) conventions.
+The spec is the source of truth — code and verification prompts are derived from it.
+
+```
+.speckit/constitution.yaml          ← project-wide principles (read this first)
+.speckit/specifications/
+├── var_model.spec.yaml             ← defines properties for risk_model.c
+└── insurance_model.spec.yaml       ← defines properties for insurance_model.c
+```
+
+**To generate an Aristotle prompt directly from a spec:**
+```python
+from utils.spec_runner import build_aristotle_prompt, load_spec
+
+spec   = load_spec("var_model")
+prompt = build_aristotle_prompt(spec)
+print(prompt)   # ready to pass to Project.create_from_directory()
+```
+
+**To run a full spec-driven verification:**
+```python
+from utils.spec_runner import run_verification
+result = await run_verification("var_model")
+print(result["status"])  # SUCCESS / COUNTEREXAMPLE_FOUND
+```
+
+---
+
+## Trials (Experiments from Papers)
+
+Trials are self-contained experiments translating math papers into verified C code.
+
+```bash
+# See what the trial will verify (no API call)
+python trials/t01_mack_chain_ladder/run_trial.py --dry-run
+
+# Run the full verification
+python trials/t01_mack_chain_ladder/run_trial.py
+
+# See a worked example of the math first
+python trials/t02_buhlmann_credibility/run_trial.py --show-example
+```
+
+Results are saved to `trials/RESULTS.md`. See `trials/README.md` for the full list.
+
+---
+
 ## Repository Structure
 
 ```
 harmonic-risk-lab/
-├── examples/                      # Run these in order
-│   ├── 01_hello_aristotle.py      # First verification, confirms setup
-│   ├── 02_verify_var_model.py     # Market risk (VaR, ES, RWA)
-│   ├── 03_verify_insurance.py     # Actuarial pricing invariants
-│   └── 04_gemini_pipeline.py      # Full NL → C → proof → NL pipeline
+├── .speckit/
+│   ├── constitution.yaml              # Project principles (machine-readable contract)
+│   └── specifications/
+│       ├── var_model.spec.yaml        # Formal spec for risk_model.c
+│       └── insurance_model.spec.yaml  # Formal spec for insurance_model.c
 │
-├── models/                        # C code that Aristotle verifies
-│   ├── risk_model.c               # VaR, Expected Shortfall, RWA
-│   └── insurance_model.c          # Premium principles, XL reinsurance
+├── examples/                          # Run these in order (basics)
+│   ├── 01_hello_aristotle.py          # First verification, confirms setup
+│   ├── 02_verify_var_model.py         # Market risk (VaR, ES, RWA)
+│   ├── 03_verify_insurance.py         # Actuarial pricing invariants
+│   └── 04_gemini_pipeline.py          # Full NL → C → proof → NL pipeline
+│
+├── models/                            # Shared C models (verified by examples/)
+│   ├── risk_model.c                   # VaR, Expected Shortfall, RWA
+│   └── insurance_model.c              # Premium principles, XL reinsurance
+│
+├── trials/                            # Paper-driven experiments
+│   ├── README.md                      # How to run trials
+│   ├── RESULTS.md                     # Append-only result log
+│   ├── t01_mack_chain_ladder/         # Mack (1993) IBNR reserving
+│   └── t02_buhlmann_credibility/      # Bühlmann (1967) pricing credibility
+│
+├── papers/
+│   └── README.md                      # Curated reading list with trial roadmap
 │
 ├── utils/
-│   └── gemini_client.py           # Gemini helpers: generate code + explain results
+│   ├── gemini_client.py               # Gemini: generate code + explain results
+│   └── spec_runner.py                 # Read spec.yaml → Aristotle prompt
 │
-├── lean_proofs/                   # Lean 4 proofs (bonus, requires aristotlelib < 3)
-│   └── BasicRisk.lean             # Mathematical foundations as formal theorems
+├── lean_proofs/                       # Lean 4 proofs (bonus, aristotlelib < 3)
+│   └── BasicRisk.lean
 │
-├── .env.example                   # Copy to .env and fill in your keys
+├── .env.example
 ├── requirements.txt
 └── pyproject.toml
 ```

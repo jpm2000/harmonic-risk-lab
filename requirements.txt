@@ -2,3 +2,5 @@ aristotlelib>=3
 google-genai>=1.0.0
 python-dotenv>=1.0.0
 rich>=13.0.0
+pyyaml>=6.0        # for reading .spec.yaml files in spec_runner.py
+hypothesis>=6.0    # property-based testing (optional, for quick pre-Aristotle checks)

@@ -1,0 +1,74 @@
+# .speckit/constitution.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# PROJECT CONSTITUTION — harmonic-risk-lab
+#
+# This file is the machine-readable contract for all development in this repo.
+# Every model, trial, and verification must honor these principles.
+# If a new feature conflicts with a principle, the principle wins.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: harmonic-risk-lab
+version: "1.0"
+description: >
+  Formal verification of financial risk and insurance models using
+  Harmonic's Aristotle API. Designed as a trial-and-error learning lab
+  for bluberri's risk platform serving insurance brokers and critical
+  infrastructure (mining, defense).
+
+principles:
+
+  - name: spec-before-code
+    priority: 1
+    description: >
+      Every model must have a .spec.yaml file defining its inputs, outputs,
+      and properties BEFORE a C implementation is written.
+      The spec is the source of truth. The code serves the spec.
+
+  - name: formal-proof-is-the-goal
+    priority: 2
+    description: >
+      The end goal of every trial is a machine-verifiable proof from Aristotle.
+      Numerical tests and hypothesis checks are useful stepping stones, not
+      the destination.
+
+  - name: invalid-inputs-return-sentinel
+    priority: 3
+    description: >
+      All C functions must return -1.0 for invalid inputs (negative where
+      non-negative required, out-of-range parameters, division by zero).
+      Never silently return a wrong value. This makes formal verification
+      cleaner and prevents silent data corruption.
+
+  - name: paper-traceability
+    priority: 4
+    description: >
+      Every model must cite its source: the paper, textbook section, or
+      regulatory document that defines the formula. No orphaned models.
+      Reference format: Author (Year), Title, Section/Equation number.
+
+  - name: append-only-trials
+    priority: 5
+    description: >
+      Trial results are never deleted. Failures are as valuable as successes.
+      Each trial run appends a result to trials/RESULTS.md.
+      If Aristotle finds a counterexample, document it — that's a bug found.
+
+  - name: no-underpricing
+    priority: 6
+    description: >
+      All insurance premium models must formally prove: premium >= expected_loss.
+      This is the fundamental solvency requirement. No exception.
+
+  - name: bounded-risk-outputs
+    priority: 7
+    description: >
+      All risk measure functions (VaR, ES, RWA) must return values in a
+      documented, finite range for valid inputs. Unbounded outputs are a
+      modeling error, not a feature.
+
+constraints:
+  language: C11
+  verification_engine: aristotle
+  verification_language: Lean4
+  minimum_python: "3.10"
+  api_keys_in_env_only: true
