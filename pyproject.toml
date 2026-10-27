@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "harmonic-risk-lab"
+version = "0.1.0"
+description = "Learning Harmonic's Aristotle API for finance, risk, and insurance verification"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aristotlelib>=3",
+    "google-genai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.1.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
